@@ -54,7 +54,7 @@ class GradientBoost:
         #         self._best_clf = clf
         # print "best min sample leaves =", best_min_sample_leaves
         if do_cv == True:
-            ev.timer(self.cross_validation, input_x, input_y, self._depth)
+            ev.timer(self.cross_validation, input_x, input_y, self._tree_num)
 
         else:
             print "Training with tree num =", self._tree_num, ", depth =", self._depth
@@ -139,29 +139,29 @@ class GradientBoost:
     #     return average_error_val
 
     # Validation
-    def cross_validation(self, input_x, input_y, depth):
-        print "Start Validation with depth =", depth, ", fold_num =", self._fold_num
+    def cross_validation(self, input_x, input_y, tree_numList):
+        print "Start Validation with tree_numList =", tree_numList, ", fold_num =", self._fold_num
         all_scores = []
         all_stds = []
 
-        for dep in depth:
-            clf = ensemble.GradientBoostingClassifier(n_estimators=100 , max_depth=dep, max_features="auto")
-            scores = cross_validation.cross_val_score(clf, input_x, input_y.flatten(), cv=self._fold_num, scoring='f1_weighted')
+        for tree_num in tree_numList:
+            clf = ensemble.GradientBoostingClassifier(n_estimators=tree_num , max_depth=self._depth, max_features="auto")
+            scores = cross_validation.cross_val_score(clf, input_x, input_y.flatten(), cv=self._fold_num)
             all_scores.append(scores.mean())
             all_stds.append(scores.std() * 2)
-            print "Done cv for depth =", dep
+            print "Done cv for tree_num =", tree_num
 
         best_score_index = np.argmax(all_scores)
         best_score = all_scores[best_score_index]
 
-        print "Cross Validation =", best_score, ", with best min_sample_leaves =", self._depth[best_score_index]
+        print "Cross Validation =", best_score, ", with best tree_num =", self._tree_num[best_score_index]
         print "All Scores", all_scores, ", with stds 95 confidence =", all_stds
 
-        print "Training with tree num =", self._tree_num, ", min sample leaves num =", self._depth[best_score_index]
-        self._best_clf = ev.timer(self.train, self._tree_num, self._depth[best_score_index], input_x, input_y)
+        # print "Training with tree num =", self._tree_num, ", min sample leaves num =", self._depth[best_score_index]
+        # self._best_clf = ev.timer(self.train, self._tree_num, self._depth[best_score_index], input_x, input_y)
 
-        good_feature_indices = self.extract_good_features(self._best_clf, 100)
-        print good_feature_indices
+        # good_feature_indices = self.extract_good_features(self._best_clf, 100)
+        # print good_feature_indices
 
     def train(self, tree_num, depth, train_x, train_y):
         clf = ensemble.GradientBoostingClassifier(n_estimators=tree_num , max_depth=depth, max_features="auto")
